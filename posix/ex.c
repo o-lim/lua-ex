@@ -519,13 +519,10 @@ int luaopen_ex(lua_State *L)
   lua_setfield(L, -2, "__index");             /* . P */
   /* make all functions available via ex. namespace */
 #if LUA_VERSION_NUM > 501
-  lua_newtable(L);
-  luaL_setfuncs(L, ex_oslib, 0);
-  lua_pushvalue(L, -1);
-  lua_setglobal(L, name);
+  luaL_setfuncs(L, ex_oslib, 0);              /* . P ex */
   luaL_setfuncs(L, ex_iolib, 0);
 #else
-  luaL_register(L, name, ex_oslib);           /* . P ex */
+  luaL_register(L, 0, ex_oslib);              /* . P ex */
   luaL_register(L, 0, ex_iolib);
 #endif
   copyfields(L, ex_process_functions, -2, -1);
@@ -550,5 +547,6 @@ int luaopen_ex(lua_State *L)
   luaL_getmetatable(L, LUA_FILEHANDLE);       /* . F */
   if (lua_isnil(L, -1)) return luaL_error(L, "can't find FILE* metatable");
   copyfields(L, ex_iofile_methods, ex, -1);
+  lua_pop(L, lua_gettop(L) - ex);
   return 1;
 }
