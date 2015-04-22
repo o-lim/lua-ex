@@ -25,6 +25,19 @@
 
 #include "spawn.h"
 
+#if LUA_VERSION_NUM > 501
+typedef luaL_Stream LStream;
+#define tolstream(L)  ((LStream *)luaL_checkudata(L, 1, LUA_FILEHANDLE))
+#define isclosed(p)   ((p)->closef == NULL)
+#define lua_objlen    lua_rawlen
+
+static int luaL_typerror (lua_State *L, int narg, const char *tname) {
+  const char *msg = lua_pushfstring(L, "%s expected, got %s",
+                                    tname, luaL_typename(L, narg));
+  return luaL_argerror(L, narg, msg);
+}
+#endif
+
 /* -- nil error */
 extern int push_error(lua_State *L)
 {
@@ -109,10 +122,21 @@ static int ex_mkdir(lua_State *L)
 static FILE *check_file(lua_State *L, int idx, const char *argname)
 {
   FILE **pf;
-  if (idx > 0) pf = luaL_checkudata(L, idx, LUA_FILEHANDLE);
-  else {
+  if (idx > 0) {
+#if LUA_VERSION_NUM > 501
+    LStream *p = (LStream *)luaL_checkudata(L, idx, LUA_FILEHANDLE);
+    pf = &p->f;
+#else
+    pf = luaL_checkudata(L, idx, LUA_FILEHANDLE);
+#endif
+  } else {
     idx = absindex(L, idx);
+#if LUA_VERSION_NUM > 501
+    LStream *p = lua_touserdata(L, idx);
+    pf = &p->f;
+#else
     pf = lua_touserdata(L, idx);
+#endif
     luaL_getmetatable(L, LUA_FILEHANDLE);
     if (!pf || !lua_getmetatable(L, idx) || !lua_rawequal(L, -1, -2))
       luaL_error(L, "bad %s option (%s expected, got %s)",
@@ -123,6 +147,21 @@ static FILE *check_file(lua_State *L, int idx, const char *argname)
   return *pf;
 }
 
+#if LUA_VERSION_NUM > 501
+static int io_fclose(lua_State *L) {
+  LStream *p = tolstream(L);
+  int res = fclose(p->f);
+  return luaL_fileresult(L, (res == 0), NULL);
+}
+static LStream *new_file(lua_State *L, int fd, const char *mode)
+{
+  LStream *p = (LStream *)lua_newuserdata(L, sizeof(LStream));
+  luaL_setmetatable(L, LUA_FILEHANDLE);
+  p->f = fdopen(fd, mode);
+  p->closef = &io_fclose;
+  return p;
+}
+#else
 static FILE **new_file(lua_State *L, int fd, const char *mode)
 {
   FILE **pf = lua_newuserdata(L, sizeof *pf);
@@ -132,6 +171,7 @@ static FILE **new_file(lua_State *L, int fd, const char *mode)
   *pf = fdopen(fd, mode);
   return pf;
 }
+#endif
 
 
 #define new_dirent(L) lua_newtable(L)
@@ -416,7 +456,7 @@ static int ex_spawn(lua_State *L)
 
 /* register functions from 'lib' in table 'to' by copying existing
  * closures from table 'from' or by creating new closures */
-static void copyfields(lua_State *L, const luaL_reg *l, int from, int to)
+static void copyfields(lua_State *L, const luaL_Reg *l, int from, int to)
 {
   for (to = absindex(L, to); l->name; l++) {
     lua_getfield(L, from, l->name);
@@ -432,13 +472,13 @@ int luaopen_ex(lua_State *L)
 {
   const char *name = lua_tostring(L, 1);
   int ex;
-  const luaL_reg ex_iolib[] = {
+  const luaL_Reg ex_iolib[] = {
     {"pipe",       ex_pipe},
 #define ex_iofile_methods (ex_iolib + 1)
     {"lock",       ex_lock},
     {"unlock",     ex_lock},
     {0,0} };
-  const luaL_reg ex_oslib[] = {
+  const luaL_Reg ex_oslib[] = {
     /* environment */
     {"getenv",     ex_getenv},
     {"setenv",     ex_setenv},
@@ -453,25 +493,41 @@ int luaopen_ex(lua_State *L)
     {"sleep",      ex_sleep},
     {"spawn",      ex_spawn},
     {0,0} };
-  const luaL_reg ex_diriter_methods[] = {
+  const luaL_Reg ex_diriter_methods[] = {
     {"__gc",       diriter_close},
     {0,0} };
-  const luaL_reg ex_process_methods[] = {
+  const luaL_Reg ex_process_methods[] = {
     {"__tostring", process_tostring},
 #define ex_process_functions (ex_process_methods + 1)
     {"wait",       process_wait},
     {0,0} };
   /* diriter metatable */
   luaL_newmetatable(L, DIR_HANDLE);           /* . D */
+#if LUA_VERSION_NUM > 501
+  luaL_setfuncs(L, ex_diriter_methods, 0);    /* . D */
+#else
   luaL_register(L, 0, ex_diriter_methods);    /* . D */
+#endif
   /* proc metatable */
   luaL_newmetatable(L, PROCESS_HANDLE);       /* . P */
+#if LUA_VERSION_NUM > 501
+  luaL_setfuncs(L, ex_process_methods, 0);    /* . P */
+#else
   luaL_register(L, 0, ex_process_methods);    /* . P */
+#endif
   lua_pushvalue(L, -1);                       /* . P P */
   lua_setfield(L, -2, "__index");             /* . P */
   /* make all functions available via ex. namespace */
+#if LUA_VERSION_NUM > 501
+  lua_newtable(L);
+  luaL_setfuncs(L, ex_oslib, 0);
+  lua_pushvalue(L, -1);
+  lua_setglobal(L, name);
+  luaL_setfuncs(L, ex_iolib, 0);
+#else
   luaL_register(L, name, ex_oslib);           /* . P ex */
   luaL_register(L, 0, ex_iolib);
+#endif
   copyfields(L, ex_process_functions, -2, -1);
   ex = lua_gettop(L);
   /* extend the os table */
@@ -484,10 +540,12 @@ int luaopen_ex(lua_State *L)
   lua_getglobal(L, "io");                     /* . io */
   if (lua_isnil(L, -1)) return luaL_error(L, "io not loaded");
   copyfields(L, ex_iolib, ex, -1);
+#if LUA_VERSION_NUM <= 501
   lua_getfield(L, ex, "pipe");                /* . io ex_pipe */
   lua_getfield(L, -2, "open");                /* . io ex_pipe io_open */
   lua_getfenv(L, -1);                         /* . io ex_pipe io_open E */
   lua_setfenv(L, -3);                         /* . io ex_pipe io_open */
+#endif
   /* extend the io.file metatable */
   luaL_getmetatable(L, LUA_FILEHANDLE);       /* . F */
   if (lua_isnil(L, -1)) return luaL_error(L, "can't find FILE* metatable");

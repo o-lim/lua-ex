@@ -13,6 +13,10 @@
 #include "spawn.h"
 #include "pusherror.h"
 
+#if LUA_VERSION_NUM > 501
+#define lua_objlen    lua_rawlen
+#endif
+
 #define debug(...) /* fprintf(stderr, __VA_ARGS__) */
 #define debug_stack(L) /* #include "../lds.c" */
 
