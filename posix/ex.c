@@ -468,7 +468,7 @@ static void copyfields(lua_State *L, const luaL_Reg *l, int from, int to)
   }
 }
 
-int luaopen_ex(lua_State *L)
+int luaopen_ex_core(lua_State *L)
 {
   const char *name = lua_tostring(L, 1);
   int ex;

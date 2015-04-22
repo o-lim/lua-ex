@@ -6,13 +6,16 @@ INCLUDES= $(LUAINC)
 WARNINGS= -W -Wall
 LIBS= $(LUALIB)
 
-T= ex.so
-default: $(T)
+TDIR?= ../ex
+T?= core.so
+default: all
 
 OBJS= ex.o spawn.o $(EXTRA)
-$(T): $(OBJS) $(EXTRA); $(CC) -shared -o $@ $(OBJS) $(LIBS)
+$(TDIR):; mkdir -p $(TDIR)
+$(TDIR)/$(T): $(OBJS) $(EXTRA) | $(TDIR); $(CC) -shared -o $@ $(OBJS) $(LIBS)
+all: $(TDIR)/$(T) | $(TDIR); cp -p ../src/*.lua $(TDIR)
 ex.o: ex.c spawn.h
 spawn.o: spawn.c spawn.h
 posix_spawn.o: posix_spawn.c posix_spawn.h
 
-clean:; rm -f *.o ex.so ex.dll $(T)
+clean:; rm -rf *.o *.so *.dll $(TDIR)

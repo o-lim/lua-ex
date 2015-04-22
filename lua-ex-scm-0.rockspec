@@ -32,7 +32,7 @@ local function make_plat(plat)
   }
   local modules = {
     unix = {
-      ex = {
+      ['ex.core'] = {
         sources = {
           "posix/ex.c",
           "posix/spawn.c",
@@ -40,9 +40,12 @@ local function make_plat(plat)
         defines = defines[plat],
         incdir = "/posix",
       },
+      ['ex.iox']  = 'src/iox.lua',
+      ['ex.osx']  = 'src/osx.lua',
+      ['ex.init'] = 'src/init.lua',
     },
     cygwin = {
-      ex = {
+      ['ex.core'] = {
         sources = {
           "posix/ex.c",
           "posix/spawn.c",
@@ -51,9 +54,12 @@ local function make_plat(plat)
         defines = defines[plat],
         incdir = "/posix",
       },
+      ['ex.iox']  = 'src/iox.lua',
+      ['ex.osx']  = 'src/osx.lua',
+      ['ex.init'] = 'src/init.lua',
     },
     win32 = {
-      ex = {
+      ['ex.core'] = {
         sources = {
           "w32api/ex.c",
           "w32api/spawn.c",
@@ -63,6 +69,9 @@ local function make_plat(plat)
         defines = defines[plat],
         incdir = "/w32api",
       },
+      ['ex.iox']  = 'src/iox.lua',
+      ['ex.osx']  = 'src/osx.lua',
+      ['ex.init'] = 'src/init.lua',
     },
   }
   return { modules = modules[plat] }
