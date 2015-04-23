@@ -189,6 +189,14 @@ int spawn_param_execute(struct spawn_params *p)
   return 1;
 }
 
+/* proc -- pid */
+int process_pid(lua_State *L)
+{
+  struct process *p = luaL_checkudata(L, 1, PROCESS_HANDLE);
+  lua_pushnumber(L, p->dwProcessId);
+  return 1;
+}
+
 /* proc -- exitcode/nil error */
 int process_wait(lua_State *L)
 {

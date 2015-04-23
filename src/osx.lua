@@ -16,6 +16,7 @@ local osx = {
   -- process control
   sleep      = ex_core.sleep,
   spawn      = ex_core.spawn,
+  pid        = ex_core.pid,
   wait       = ex_core.wait,
 }
 

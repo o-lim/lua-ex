@@ -23,6 +23,7 @@ void spawn_param_redirect(
   HANDLE h);
 int spawn_param_execute(struct spawn_params *p);
 
+int process_pid(lua_State *L);
 int process_wait(lua_State *L);
 int process_tostring(lua_State *L);
 

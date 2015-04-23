@@ -20,6 +20,7 @@ void spawn_param_env(struct spawn_params *p);
 void spawn_param_redirect(struct spawn_params *p, const char *stdname, int fd);
 int spawn_param_execute(struct spawn_params *p);
 
+int process_pid(lua_State *L);
 int process_wait(lua_State *L);
 int process_tostring(lua_State *L);
 

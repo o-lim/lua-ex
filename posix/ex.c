@@ -499,6 +499,7 @@ int luaopen_ex_core(lua_State *L)
   const luaL_Reg ex_process_methods[] = {
     {"__tostring", process_tostring},
 #define ex_process_functions (ex_process_methods + 1)
+    {"pid",        process_pid},
     {"wait",       process_wait},
     {0,0} };
   /* diriter metatable */
