@@ -276,7 +276,7 @@ static int ex_dir(lua_State *L)
   switch (lua_type(L, 1)) {
   default: return luaL_typerror(L, 1, "pathname");
   case LUA_TNONE:
-	lua_pushliteral(L, ".");
+    lua_pushliteral(L, ".");
   case LUA_TSTRING:
     pathname = lua_tostring(L, 1);
     lua_pushcfunction(L, ex_dir);       /* pathname ... iter */
