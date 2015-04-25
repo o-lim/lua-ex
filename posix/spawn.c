@@ -3,6 +3,7 @@
  * http://lua-users.org/wiki/ExtensionProposal
  * Copyright 2007 Mark Edgar < medgar at gmail com >
  */
+#include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #if MISSING_POSIX_SPAWN
@@ -26,6 +27,7 @@ struct spawn_params {
   lua_State *L;
   const char *command, **argv, **envp;
   posix_spawn_file_actions_t redirect;
+  posix_spawnattr_t attr;
 };
 
 extern int push_error(lua_State *L);
@@ -37,6 +39,8 @@ struct spawn_params *spawn_param_init(lua_State *L)
   p->command = 0;
   p->argv = p->envp = 0;
   posix_spawn_file_actions_init(&p->redirect);
+  posix_spawnattr_init(&p->attr);
+  posix_spawnattr_setflags(&p->attr, POSIX_SPAWN_USEVFORK);
   return p;
 }
 
@@ -144,10 +148,12 @@ int spawn_param_execute(struct spawn_params *p)
   luaL_getmetatable(L, PROCESS_HANDLE);
   lua_setmetatable(L, -2);
   proc->status = -1;
-  ret = posix_spawnp(&proc->pid, p->command, &p->redirect, 0,
+  errno = 0;
+  ret = posix_spawnp(&proc->pid, p->command, &p->redirect, &p->attr,
                      (char *const *)p->argv, (char *const *)p->envp);
   posix_spawn_file_actions_destroy(&p->redirect);
-  return ret != 0 ? push_error(L) : 1;
+  posix_spawnattr_destroy(&p->attr);
+  return ret != 0 || errno != 0 ? push_error(L) : 1;
 }
 
 /* proc -- pid */

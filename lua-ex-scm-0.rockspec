@@ -20,6 +20,7 @@ local function make_plat(plat)
   local defines = {
     unix = {
       "_XOPEN_SOURCE=600",
+      "_GNU_SOURCE",
     },
     cygwin = {
       "_XOPEN_SOURCE=600",

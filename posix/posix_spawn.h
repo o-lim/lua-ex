@@ -11,16 +11,17 @@
 #define restrict
 #endif
 
-typedef void *posix_spawnattr_t;
+typedef struct {
+  short int flags;
+} posix_spawnattr_t;
 
-enum {
-  POSIX_SPAWN_RESETIDS,
-  POSIX_SPAWN_SETPGROUP,
-  POSIX_SPAWN_SETSCHEDPARAM,
-  POSIX_SPAWN_SETSCHEDULER,
-  POSIX_SPAWN_SETSIGDEF,
-  POSIX_SPAWN_SETSIGMASK,
-};
+#define POSIX_SPAWN_RESETIDS        0x01
+#define POSIX_SPAWN_SETPGROUP       0x02
+#define POSIX_SPAWN_SETSIGDEF       0x04
+#define POSIX_SPAWN_SETSIGMASK      0x08
+#define POSIX_SPAWN_SETSCHEDPARAM   0x10
+#define POSIX_SPAWN_SETSCHEDULER    0x20
+#define POSIX_SPAWN_USEVFORK        0x40
 
 int posix_spawnattr_init(posix_spawnattr_t *attrp);
 int posix_spawnattr_getflags(

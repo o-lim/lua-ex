@@ -18,6 +18,32 @@
 #define OPEN_MAX sysconf(_SC_OPEN_MAX)
 #endif
 
+int posix_spawnattr_init(posix_spawnattr_t *attrp)
+{
+  attrp->flags = 0;
+  return 0;
+}
+
+int posix_spawnattr_getflags(
+  const posix_spawnattr_t *restrict attrp,
+  short *restrict flags)
+{
+  *flags = attrp->flags;
+  return 0;
+}
+
+int posix_spawnattr_setflags(
+  posix_spawnattr_t *attrp,
+  short flags)
+{
+  attrp->flags = flags;
+  return 0;
+}
+
+int posix_spawnattr_destroy(posix_spawnattr_t *attrp)
+{
+  return 0;
+}
 
 int posix_spawn_file_actions_init(
   posix_spawn_file_actions_t *act)
@@ -59,11 +85,20 @@ int posix_spawnp(
   char *const argv[restrict],
   char *const envp[restrict])
 {
+  const short usevfork = POSIX_SPAWN_USEVFORK;
+  short flags = 0;
+
   if (!ppid || !path || !argv || !envp)
     return EINVAL;
-  if (attrp)
-    return EINVAL;
-  switch (*ppid = fork()) {
+
+  posix_spawnattr_getflags(attrp, &flags);
+  if (flags & usevfork) {
+    *ppid = vfork();
+  } else {
+    *ppid = fork();
+  }
+
+  switch (*ppid) {
   case -1: return -1;
   default: return 0;
   case 0:
