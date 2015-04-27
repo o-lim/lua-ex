@@ -212,6 +212,19 @@ int process_wait(lua_State *L)
   return 1;
 }
 
+/* proc -- exitcode/nil error */
+int process_kill(lua_State *L)
+{
+  struct process *p = luaL_checkudata(L, 1, PROCESS_HANDLE);
+  if (p->status == -1) {
+    if (!TerminateProcess(p->hProcess, 0))
+      return windows_pushlasterror(L);
+    p->status = 0;
+  }
+  lua_pushnumber(L, p->status);
+  return 1;
+}
+
 /* proc -- string */
 int process_tostring(lua_State *L)
 {

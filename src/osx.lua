@@ -18,6 +18,7 @@ local osx = {
   spawn      = ex_core.spawn,
   pid        = ex_core.pid,
   wait       = ex_core.wait,
+  kill       = ex_core.kill,
 }
 
 return osx

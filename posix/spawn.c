@@ -172,6 +172,20 @@ int process_wait(lua_State *L)
   return 1;
 }
 
+/* proc -- exitcode/nil error */
+int process_kill(lua_State *L)
+{
+  struct process *p = luaL_checkudata(L, 1, PROCESS_HANDLE);
+  if (p->status == -1) {
+    int const status = kill(p->pid, SIGTERM);
+    if (status == -1)
+      return push_error(L);
+    p->status = WEXITSTATUS(status);
+  }
+  lua_pushnumber(L, p->status);
+  return 1;
+}
+
 /* proc -- string */
 int process_tostring(lua_State *L)
 {

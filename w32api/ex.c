@@ -559,6 +559,7 @@ int luaopen_ex_core(lua_State *L)
 #define ex_process_functions (ex_process_methods + 1)
     {"pid",        process_pid},
     {"wait",       process_wait},
+    {"kill",       process_kill},
     {0,0} };
   /* diriter metatable */
   luaL_newmetatable(L, DIR_HANDLE);           /* . D */
