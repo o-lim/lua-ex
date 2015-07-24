@@ -21,6 +21,7 @@ local function make_plat(plat)
     unix = {
       "_XOPEN_SOURCE=600",
       "_GNU_SOURCE",
+      "MISSING_POSIX_SPAWN",
     },
     cygwin = {
       "_XOPEN_SOURCE=600",
@@ -37,6 +38,7 @@ local function make_plat(plat)
         sources = {
           "posix/ex.c",
           "posix/spawn.c",
+          "posix/posix_spawn.c",
         },
         defines = defines[plat],
         incdir = "/posix",

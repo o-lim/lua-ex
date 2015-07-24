@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -87,6 +88,13 @@ int posix_spawnp(
 {
   const short usevfork = POSIX_SPAWN_USEVFORK;
   short flags = 0;
+  int count = 0;
+  int err = 0;
+  int fds[2];
+
+  if (pipe2(fds, O_CLOEXEC)) {
+    return -1;
+  }
 
   if (!ppid || !path || !argv || !envp)
     return EINVAL;
@@ -100,16 +108,30 @@ int posix_spawnp(
 
   switch (*ppid) {
   case -1: return -1;
-  default: return 0;
+  default:
+    close(fds[1]);
+    while ((count = read(fds[0], &err, sizeof(errno))) == -1) {
+      if (errno != EAGAIN && errno != EINTR) {
+        break;
+      }
+    }
+    close(fds[0]);
+    errno = err;
+    return (count == 0 ? 0 : -1);
   case 0:
+    close(fds[0]);
     if (act) {
       int i;
-      for (i = 0; i < 3; i++)
-        if (act->dups[i] != -1 && -1 == dup2(act->dups[i], i))
+      for (i = 0; i < 3; i++) {
+        if (act->dups[i] != -1 && -1 == dup2(act->dups[i], i)) {
+          write(fds[1], &errno, sizeof(errno));
           _exit(111);
+        }
+      }
     }
     environ = (char **)envp;
     execvp(path, argv);
+    write(fds[1], &errno, sizeof(errno));
     _exit(111);
     /*NOTREACHED*/
   }
