@@ -197,6 +197,11 @@ int process_tostring(lua_State *L)
 {
   struct process *p = luaL_checkudata(L, 1, PROCESS_HANDLE);
   char buf[40];
+  int status=0;
+  int res;
+  res=waitpid(p->pid, &status, WNOHANG);
+  if( p->pid == res ) p->status=WEXITSTATUS(status);
+  else if(res == -1) p->status=0;
   lua_pushlstring(L, buf,
     sprintf(buf, "process (%lu, %s)", (unsigned long)p->pid,
       p->status==-1 ? "running" : "terminated"));
