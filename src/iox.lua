@@ -15,7 +15,20 @@ local iox = {
       return proc, err
     end
     return proc, rd, wr
-  end
+  end,
+
+  popen3 = function(...)
+    local proc_rd, wr = ex_core.pipe()
+    local rd, proc_wr = ex_core.pipe()
+    local rderr, proc_werr = ex_core.pipe()
+    local proc, err = ex_core.spawn{stdin = proc_rd, stdout = proc_wr, stderr = proc_werr, ...}
+    proc_rd:close(); proc_wr:close(); proc_werr:close()
+    if not proc then
+      wr:close(); rd:close(); rderr:close()
+      return proc, err
+    end
+    return proc, rd, wr, rderr
+  end,
 }
 
 return iox
